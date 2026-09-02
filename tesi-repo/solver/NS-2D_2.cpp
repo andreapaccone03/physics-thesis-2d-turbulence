@@ -101,7 +101,6 @@ void write_spectrum_average(ofstream& out, const vector<double>& spectrum_accum,
 void save_step(ofstream& f_w, ofstream& f_psi, ofstream& f_vel, double time, const vector<double>& x, const vector<double>& y, fftw_complex* w_hat, int N, double& total_energy, double& total_enstrophy, vector<double>& energy_spectrum_accum, vector<double>& enstrophy_spectrum_accum){
 
     int NN = N * N;
-    // Cast esplicito a double per prevenire overflow nel calcolo di N^4
     const double prefactor = 0.5 / (static_cast<double>(NN) * NN);
 
     total_energy = 0.0;
@@ -109,7 +108,7 @@ void save_step(ofstream& f_w, ofstream& f_psi, ofstream& f_vel, double time, con
 
     fftw_complex* buf = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * NN);
 
-    // --- psi e accumulo spettri ---
+    // psi e accumulo spettri
     for (int i = 0; i < N; ++i) {
         int nx = (i <= N / 2) ? i : i - N;
         double kx = wave_number(i, N);
@@ -160,7 +159,7 @@ void save_step(ofstream& f_w, ofstream& f_psi, ofstream& f_vel, double time, con
     }
     f_psi << "\n";
 
-    // --- ux, uy ---
+    // ux, uy
     fftw_complex* ux_buf = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * NN);
     fftw_complex* uy_buf = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * NN);
 
@@ -207,7 +206,7 @@ void save_step(ofstream& f_w, ofstream& f_psi, ofstream& f_vel, double time, con
     }
     f_vel << "\n";
 
-    // --- vorticita in spazio reale ---
+    //vorticita in spazio reale
     memcpy(buf, w_hat, sizeof(fftw_complex) * NN);
     p = fftw_plan_dft_2d(N, N, buf, buf, FFTW_BACKWARD, FFTW_ESTIMATE);
     fftw_execute(p);
@@ -258,16 +257,15 @@ void save_final(const vector<double>& x, const vector<double>& y, fftw_complex* 
 }
 
 void forzante(fftw_complex* f_hat, int N, double k_f, double A) {
-    // Generatori casuali statici per evitare di riallocarli a ogni step temporale
+    // Generatori casuali statici 
     static std::random_device rd;
     static std::mt19937 gen(rd());
     static std::normal_distribution<> dist(0.0, 1.0);
 
-    // Azzera completamente la forzante del passo precedente
+    // Azzera la forzante del passo precedente
     std::memset(f_hat, 0, sizeof(fftw_complex) * N * N);
 
-    // Spessore del guscio spettrale (espresso in unità fisiche coerenti con k_f, es. 2*pi * 0.5)
-    // Se k_f è espresso come intero puro (es. 10.0), cambia questo valore in 0.5
+    // Spessore del guscio spettrale 
     double pi = std::acos(-1.0);
     double dk = 2.0 * pi * 0.5; 
 
@@ -278,16 +276,12 @@ void forzante(fftw_complex* f_hat, int N, double k_f, double A) {
             int idx = i * N + j;
             int idx_sym = i_sym * N + j_sym;
 
-            // Elaboriamo i punti evitando i doppi conteggi nel semipiano spettrale
             if (idx <= idx_sym) { 
-                // Calcoliamo i VERI numeri d'onda fisici
                 double kx = wave_number(i, N);
                 double ky = wave_number(j, N);
                 
-                // Calcolo del modulo nello spazio fisico coerente con il main
                 double k_modulo = std::sqrt(kx * kx + ky * ky);
-                
-                // Se il vettore d'onda non appartiene alla corona circolare, lo saltiamo
+            
                 if (std::fabs(k_modulo - k_f) > dk) {
                     continue;
                 }
@@ -300,22 +294,22 @@ void forzante(fftw_complex* f_hat, int N, double k_f, double A) {
                 f_hat[idx][0] = A * N * N * gR;
                 f_hat[idx][1] = A * N * N * gI;
 
-                // Imposizione rigorosa dell'ermiticità (simmetria complessa coniugata)
+                // Imposizione dell'ermiticità 
                 if (idx != idx_sym) {
-                    f_hat[idx_sym][0] =  f_hat[idx][0];  // Stessa parte reale
-                    f_hat[idx_sym][1] = -f_hat[idx][1]; // Parte immaginaria invertita
+                    f_hat[idx_sym][0] =  f_hat[idx][0]; 
+                    f_hat[idx_sym][1] = -f_hat[idx][1]; 
                 } else {
-                    // Per i modi auto-simmetrici (es. Nyquist), la parte immaginaria deve essere nulla
+                    // Per i modi auto-simmetrici, la parte immaginaria deve essere nulla
                     f_hat[idx][1] = 0.0;
                 }
             }
         }
     }
     
-    // Applica il filtro di dealiasing per ripulire i bordi alti ed evitare alias numerici
+    // filtro di dealiasing 
     dealias(f_hat, N);      
     
-    // Forza la media spaziale (modo zero) a zero per evitare derive galileiane del fluido
+    // Forza la media spaziale
     f_hat[0][0] = 0.0;
     f_hat[0][1] = 0.0; 
 }
