@@ -21,8 +21,8 @@ Il progetto implementa e confronta simulazioni numeriche della turbolenza bidime
 
 ## Struttura della Repository
 
-```text
-.
+```
+
 ├── solver/         # Codice sorgente del solver pseudospettrale (C++)
 ├── openfoam/       # Setup pulito del caso OpenFOAM (0, constant, system)
 ├── analysis/       # Script Python per calcolo spettri e grafici
