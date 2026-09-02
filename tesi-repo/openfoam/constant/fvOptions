@@ -1,0 +1,67 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2312                                  |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M  anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "constant";
+    object      fvOptions;
+}
+
+stochasticForcing
+{
+    type            vectorCodedSource;
+    name            stochasticForcingField;
+    libs            (fvOptions);
+    
+    selectionMode   cellZone;
+    cellZone        pianoCentraleZone;
+    
+    fields          (U);
+
+    codeInclude
+    #{
+        #include "mathematicalConstants.H"
+        #include <random>
+    #};
+
+    codeAddSup
+    #{
+        vectorField& Su = eqn.source();
+        const vectorField& C = mesh().C();
+        const scalar pi = constant::mathematical::pi;
+
+        scalar t = mesh().time().value();
+        
+        static std::random_device rd;
+        static std::mt19937 gen(rd());
+        std::uniform_real_distribution<scalar> dist(0.0, 2.0*pi);
+
+        scalar phase1 = dist(gen);
+        scalar phase2 = dist(gen);
+
+        forAll(Su, cellI)
+        {
+            const point& pos = C[cellI];
+            scalar k_f = 10.0;
+
+            vector f(
+                Foam::cos(2.0 * k_f * pi * pos.y() + phase1),
+                Foam::sin(2.0 * k_f * pi * pos.x() + phase2),
+                0.0
+            );
+	Su[cellI] += 3e-8 * f;
+
+        }
+    #};
+
+    codeCorrect #{ #};
+    codeConstrain #{ #};
+    codeImplicit #{ #};
+}

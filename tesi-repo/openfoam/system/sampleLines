@@ -1,0 +1,17 @@
+type            sets;
+libs            (sampling);
+writeControl    writeTime;
+interpolationScheme cellPoint;
+setFormat       raw;
+fields          (U);
+sets
+(
+    lineHoriz
+    {
+        type        uniform;
+        axis        x;
+        nPoints     256;
+        start       (0 0.5 0); // Spostato a Z = 0
+        end         (1 0.5 0); // Spostato a Z = 0
+    }
+);
