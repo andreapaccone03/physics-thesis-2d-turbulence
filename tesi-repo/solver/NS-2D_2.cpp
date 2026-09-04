@@ -521,7 +521,7 @@ int main() {
 
     // Campo forzante
     fftw_complex* f_hat = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * N * N);
-    double k_f = 2.0 * pi * 4.0;
+    double k_f = 2.0 * pi * 10.0;
     double A = 1.0/sqrt(dt);
     memset(f_hat, 0, sizeof(fftw_complex) * N * N);
 
